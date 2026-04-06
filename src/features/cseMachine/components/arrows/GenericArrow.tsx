@@ -14,8 +14,7 @@ import { arrowSelection } from './ArrowSelection';
 /** this class encapsulates an arrow to be drawn between 2 points */
 export class GenericArrow<Source extends IVisible, Target extends IVisible>
   extends Visible
-  implements IHoverable
-{
+  implements IHoverable {
   private _path: string = '';
   private _visible: boolean = true;
   points: number[] = [];
@@ -23,6 +22,7 @@ export class GenericArrow<Source extends IVisible, Target extends IVisible>
   target: Target | undefined;
   faded: boolean = false;
   private pathRef: RefObject<Konva.Path | null> = React.createRef();
+  private sourceSegmentGroupRef: RefObject<Konva.Group | null> = React.createRef();
   private sourceSegmentPathRef: RefObject<Konva.Path | null> = React.createRef();
   private arrowHeadRef: RefObject<Konva.Arrow | null> = React.createRef();
 
@@ -152,6 +152,7 @@ export class GenericArrow<Source extends IVisible, Target extends IVisible>
    * Subclasses can override this to provide custom hover colors.
    */
   protected getHighlightedColor(): string {
+    if (CseMachine.getPrintableMode()) return Config.PrintDangerColor;
     return this.isLive ? Config.ArrowHighlightedColor : Config.ArrowDeadHighlightedColor;
   }
 
@@ -262,6 +263,7 @@ export class GenericArrow<Source extends IVisible, Target extends IVisible>
     return (
       <KonvaGroup
         key={Layout.key++}
+        ref={this.sourceSegmentGroupRef}
         clipX={rect.x}
         clipY={rect.y}
         clipWidth={rect.width}
@@ -295,12 +297,21 @@ export class GenericArrow<Source extends IVisible, Target extends IVisible>
       } else {
         this.ref.current.hide();
       }
-      this.ref.current.getLayer()?.batchDraw();
     }
+    if (this.sourceSegmentGroupRef.current) {
+      if (visible) {
+        this.sourceSegmentGroupRef.current.show();
+      } else {
+        this.sourceSegmentGroupRef.current.hide();
+      }
+    }
+    const stage =
+      this.ref.current?.getStage() ?? this.sourceSegmentGroupRef.current?.getStage() ?? null;
+    stage?.batchDraw();
   }
 
   // Subclasses can override to recompute liveness before drawing
-  protected updateIsLive(): void {} //kind of an abstract method
+  protected updateIsLive(): void { } //kind of an abstract method
 
   draw() {
     this.recomputePath();
